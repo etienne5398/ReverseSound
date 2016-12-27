@@ -25,6 +25,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Random;
 
 import static android.Manifest.permission.RECORD_AUDIO;
@@ -235,8 +237,6 @@ public class RecordActivity extends AppCompatActivity {
                         AUDIO_FORMAT,
                         BUFFER_SIZE,
                         AudioTrack.MODE_STREAM);
-                at.setPlaybackParams(at.getPlaybackParams().setSpeed(0.5f));
-                at.setPlaybackParams(at.getPlaybackParams().setPitch(0.5f));
                 at.play();
                 // Write the byte array to the track
                 at.write(byteData, 0, byteData.length);
@@ -328,8 +328,8 @@ public class RecordActivity extends AppCompatActivity {
             @Override
             public void run() {
                 android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO);
-                //byte audioData[] = new byte[BUFFER_SIZE];
-                short audioData[] = new short[BUFFER_SIZE];
+                byte[] audioData = new byte[BUFFER_SIZE];
+                //short[] audioData = new short[BUFFER_SIZE];
                 recorder = new AudioRecord(
                         AUDIO_SOURCE,
                         SAMPLING_RATE,
@@ -355,7 +355,7 @@ public class RecordActivity extends AppCompatActivity {
                         return;
                     }
 
-                    if(searchThreshold(audioData, THRESHOLD) == -1 ){
+                    if(searchThreshold(byteToShort(audioData), THRESHOLD) == -1 ){
                         if(!silenceStarted) {
                             silenceStarted = true;
                             silenceStart = System.currentTimeMillis();
@@ -384,8 +384,8 @@ public class RecordActivity extends AppCompatActivity {
                         silenceStarted = false ;
                     }
                     try {
-                        byte[] byteBuffer = shortToByte(audioData, status);
-                        os.write(byteBuffer, 0, audioData.length);
+                        //byte[] byteBuffer = shortToByte(audioData, status);
+                        os.write(audioData, 0, audioData.length);
                     } catch (IOException e) {
                         Log.e(TAG, "Error saving recording ", e);
                         return;
@@ -402,25 +402,36 @@ public class RecordActivity extends AppCompatActivity {
 
     }
 
+    short [] byteToShort(byte [] input) {
+        int short_index = 0, byte_index = 0;
+        short [] shortArray = new short[input.length / 2 ];
+        for(; byte_index < input.length; ){
+            ByteBuffer bb = ByteBuffer.allocate(2);
+            bb.order(ByteOrder.LITTLE_ENDIAN);
+            bb.put(input[byte_index]);
+            bb.put(input[byte_index + 1]);
+            shortArray[short_index] = bb.getShort(0);
+            byte_index +=2;
+            ++short_index;
+        }
+        return shortArray;
+    }
 
     byte [] shortToByte(short [] input, int elements) {
         int short_index, byte_index;
         int iterations = elements; //input.length;
         byte [] buffer = new byte[iterations * 2];
-
-        short_index = byte_index = 0;
-
+        short_index = 0; byte_index = 0;
         for(/*NOP*/; short_index != iterations; /*NOP*/)
         {
             buffer[byte_index]     = (byte) (input[short_index] & 0x00FF);
             buffer[byte_index + 1] = (byte) ((input[short_index] & 0xFF00) >> 8);
-
-            ++short_index; byte_index += 2;
+            ++short_index;
+            byte_index += 2;
         }
 
         return buffer;
     }
-
 
     int searchThreshold(short[]arr,short thr){
         int arrLen=arr.length;
