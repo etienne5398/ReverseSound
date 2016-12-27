@@ -64,12 +64,13 @@ public class RecordActivity extends AppCompatActivity {
     private AudioTrack at;
     private Thread thread;
     private long silenceStart;
+    private boolean soundOccured;
     private boolean silenceStarted = false;
     private boolean autoRecord = false;
-    private int delay = 1 ;
 
+    private int delay = 1 ;
     Button buttonStartRecord, buttonStopRecord, buttonStartPlaying,
-            buttonStopPlaying;
+    buttonStopPlaying;
     Switch switch_button;
     SeekBar delayControl;
     public static final int RequestPermissionCode = 1;
@@ -400,6 +401,7 @@ public class RecordActivity extends AppCompatActivity {
                 }
                 recorder.startRecording();
                 silenceStarted = false ;
+                soundOccured = false;
                 while (recording) {
                     int status = recorder.read(audioData, 0, audioData.length);
                     if (status == AudioRecord.ERROR_INVALID_OPERATION ||
@@ -415,13 +417,19 @@ public class RecordActivity extends AppCompatActivity {
                         }
                         long timeElapsed = System.currentTimeMillis() - silenceStart;
                         System.out.println((timeElapsed)/1000);
-                        if( timeElapsed > delay * 1000){
+                        if( timeElapsed > delay * 1000 && soundOccured){
                             silenceStarted = false ;
                             stopRecord();
                             try {
                                 playShortAudioFileViaAudioTrack(ROOTPATH +"/"+ AUDIO_REVERSED_FILE_NAME);
-                                Toast.makeText(RecordActivity.this, "Recording playing",
-                                        Toast.LENGTH_SHORT).show();
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        Toast.makeText(RecordActivity.this, "Recording playing",
+                                                Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
@@ -429,15 +437,18 @@ public class RecordActivity extends AppCompatActivity {
                         }
                     }else{
                         silenceStarted = false ;
+                        soundOccured = true;
                     }
                     try {
-                        //byte[] byteBuffer = shortToByte(audioData, status);
-                        os.write(audioData, 0, audioData.length);
+                        if(soundOccured) {
+                            os.write(audioData, 0, audioData.length);
+                        }
                     } catch (IOException e) {
                         Log.e(TAG, "Error saving recording ", e);
                         return;
                     }
                 }
+                soundOccured = false;
                 try {
                     os.close();
                 } catch (IOException e) {
