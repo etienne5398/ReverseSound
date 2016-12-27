@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">ReverseSound</string>
+    <string name="autorisation">Autoriser recordAudio</string>
+</resources>
