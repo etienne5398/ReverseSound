@@ -63,8 +63,8 @@ public class RecordActivity extends AppCompatActivity {
     private long silenceStart;
     private boolean silenceStarted = false;
 
-    Button buttonStart, buttonStop, buttonPlayLastRecordAudio,
-            buttonStopPlayingRecording ;
+    Button buttonStartRecord, buttonStopRecord, buttonStartPlaying,
+            buttonStopPlaying;
     Random random ;
     public static final int RequestPermissionCode = 1;
 
@@ -73,24 +73,25 @@ public class RecordActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.record_activity_main);
 
-        buttonStart = (Button) findViewById(R.id.button);
-        buttonStop = (Button) findViewById(R.id.button2);
-        buttonPlayLastRecordAudio = (Button) findViewById(R.id.button3);
-        buttonStopPlayingRecording = (Button)findViewById(R.id.button4);
+        buttonStartRecord = (Button) findViewById(R.id.button);
+        buttonStopRecord = (Button) findViewById(R.id.button2);
+        buttonStartPlaying = (Button) findViewById(R.id.button3);
+        buttonStopPlaying = (Button)findViewById(R.id.button4);
 
-        buttonStop.setEnabled(false);
-        buttonPlayLastRecordAudio.setEnabled(false);
-        buttonStopPlayingRecording.setEnabled(false);
+        buttonStopRecord.setEnabled(false);
+        buttonStartPlaying.setEnabled(false);
+        buttonStopPlaying.setEnabled(false);
 
         random = new Random();
 
-        buttonStart.setOnClickListener(new View.OnClickListener() {
+        buttonStartRecord.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if(checkPermission()) {
+                    buttonStartRecord.setEnabled(false);
+                    buttonStopRecord.setEnabled(true);
+                    buttonStartPlaying.setEnabled(false);
                     startRecording();
-                    buttonStart.setEnabled(false);
-                    buttonStop.setEnabled(true);
                     Toast.makeText(RecordActivity.this, "Recording started",
                             Toast.LENGTH_LONG).show();
                 } else {
@@ -100,7 +101,7 @@ public class RecordActivity extends AppCompatActivity {
             }
         });
 
-        buttonStop.setOnClickListener(new View.OnClickListener() {
+        buttonStopRecord.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
@@ -111,15 +112,10 @@ public class RecordActivity extends AppCompatActivity {
             }
         });
 
-        buttonPlayLastRecordAudio.setOnClickListener(new View.OnClickListener() {
+        buttonStartPlaying.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) throws IllegalArgumentException,
                     SecurityException, IllegalStateException {
-
-                buttonStop.setEnabled(false);
-                buttonStart.setEnabled(false);
-                buttonStopPlayingRecording.setEnabled(true);
-
                 try {
                     playShortAudioFileViaAudioTrack(ROOTPATH +"/"+ AUDIO_REVERSED_FILE_NAME);
                 } catch (IOException e) {
@@ -130,13 +126,13 @@ public class RecordActivity extends AppCompatActivity {
             }
         });
 
-        buttonStopPlayingRecording.setOnClickListener(new View.OnClickListener() {
+        buttonStopPlaying.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                buttonStop.setEnabled(false);
-                buttonStart.setEnabled(true);
-                buttonStopPlayingRecording.setEnabled(false);
-                buttonPlayLastRecordAudio.setEnabled(true);
+                buttonStopRecord.setEnabled(false);
+                buttonStopPlaying.setEnabled(false);
+                buttonStartRecord.setEnabled(true);
+                buttonStartPlaying.setEnabled(true);
 
                 if (at != null) {
                     at.stop();
@@ -144,10 +140,16 @@ public class RecordActivity extends AppCompatActivity {
                 }
             }
         });
-
     }
 
     private void stopRecord() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                buttonStopRecord.setEnabled(false);
+                buttonStopPlaying.setEnabled(false);
+            }
+        });
         if(recorder != null) {
             recording = false;
             recorder.stop();
@@ -159,10 +161,8 @@ public class RecordActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                buttonStop.setEnabled(false);
-                buttonPlayLastRecordAudio.setEnabled(true);
-                buttonStart.setEnabled(true);
-                buttonStopPlayingRecording.setEnabled(false);
+                buttonStartPlaying.setEnabled(true);
+                buttonStartRecord.setEnabled(true);
             }
         });
     }
@@ -209,7 +209,15 @@ public class RecordActivity extends AppCompatActivity {
 
     private void playShortAudioFileViaAudioTrack(final String filePath) throws IOException
     {
-        
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                buttonStopRecord.setEnabled(false);
+                buttonStartRecord.setEnabled(false);
+                buttonStartPlaying.setEnabled(false);
+                buttonStopPlaying.setEnabled(true);
+            }
+        });
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -250,10 +258,10 @@ public class RecordActivity extends AppCompatActivity {
                 at.setPlaybackPositionUpdateListener(new AudioTrack.OnPlaybackPositionUpdateListener() {
                     @Override
                     public void onMarkerReached(AudioTrack audioTrack) {
-                        buttonStop.setEnabled(false);
-                        buttonPlayLastRecordAudio.setEnabled(true);
-                        buttonStart.setEnabled(true);
-                        buttonStopPlayingRecording.setEnabled(false);
+                        buttonStopRecord.setEnabled(false);
+                        buttonStopPlaying.setEnabled(false);
+                        buttonStartPlaying.setEnabled(true);
+                        buttonStartRecord.setEnabled(true);
                     }
                     @Override
                     public void onPeriodicNotification(AudioTrack audioTrack) {
@@ -352,7 +360,7 @@ public class RecordActivity extends AppCompatActivity {
                     Log.e(TAG, "File not found for recording ", e);
                 }
                 recorder.startRecording();
-
+                silenceStarted = false ;
                 while (recording) {
                     int status = recorder.read(audioData, 0, audioData.length);
                     if (status == AudioRecord.ERROR_INVALID_OPERATION ||
@@ -372,14 +380,6 @@ public class RecordActivity extends AppCompatActivity {
                             silenceStarted = false ;
                             stopRecord();
                             try {
-                                runOnUiThread(new Runnable() {
-                                      @Override
-                                      public void run() {
-                                          buttonStop.setEnabled(false);
-                                          buttonStart.setEnabled(false);
-                                          buttonStopPlayingRecording.setEnabled(true);
-                                      }
-                                });
                                 playShortAudioFileViaAudioTrack(ROOTPATH +"/"+ AUDIO_REVERSED_FILE_NAME);
                             } catch (IOException e) {
                                 e.printStackTrace();
