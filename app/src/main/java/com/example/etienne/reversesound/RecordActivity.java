@@ -4,6 +4,7 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
+import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.media.MediaRecorder;
 import android.os.Environment;
@@ -194,16 +195,21 @@ public class RecordActivity extends AppCompatActivity {
     }
 
     public boolean checkPermission() {
-        int result = ContextCompat.checkSelfPermission(getApplicationContext(),
-                WRITE_EXTERNAL_STORAGE);
-        int result1 = ContextCompat.checkSelfPermission(getApplicationContext(),
-                RECORD_AUDIO);
-        return result == PackageManager.PERMISSION_GRANTED &&
-                result1 == PackageManager.PERMISSION_GRANTED;
+        if(Build.VERSION.SDK_INT >= 23 ) {
+            int result = ContextCompat.checkSelfPermission(getApplicationContext(),
+                    WRITE_EXTERNAL_STORAGE);
+            int result1 = ContextCompat.checkSelfPermission(getApplicationContext(),
+                    RECORD_AUDIO);
+            return result == PackageManager.PERMISSION_GRANTED &&
+                    result1 == PackageManager.PERMISSION_GRANTED;
+        }else{
+            return true;
+        }
     }
 
     private void playShortAudioFileViaAudioTrack(final String filePath) throws IOException
     {
+        
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
