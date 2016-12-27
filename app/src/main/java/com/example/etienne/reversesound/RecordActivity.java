@@ -13,6 +13,8 @@ import android.util.Log;
 import android.view.View;
 
 import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.Switch;
 import android.widget.Toast;
 
 import java.io.BufferedInputStream;
@@ -62,9 +64,11 @@ public class RecordActivity extends AppCompatActivity {
     private Thread thread;
     private long silenceStart;
     private boolean silenceStarted = false;
+    private boolean autoRecord = false;
 
     Button buttonStartRecord, buttonStopRecord, buttonStartPlaying,
             buttonStopPlaying;
+    Switch switch_button;
     Random random ;
     public static final int RequestPermissionCode = 1;
 
@@ -77,12 +81,22 @@ public class RecordActivity extends AppCompatActivity {
         buttonStopRecord = (Button) findViewById(R.id.button2);
         buttonStartPlaying = (Button) findViewById(R.id.button3);
         buttonStopPlaying = (Button)findViewById(R.id.button4);
+        switch_button = (Switch) findViewById(R.id.switch_button);
 
         buttonStopRecord.setEnabled(false);
         buttonStartPlaying.setEnabled(false);
         buttonStopPlaying.setEnabled(false);
 
         random = new Random();
+
+        switch_button.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView,
+                                         boolean isChecked) {
+                autoRecord = isChecked ;
+            }
+        });
 
         buttonStartRecord.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -93,7 +107,7 @@ public class RecordActivity extends AppCompatActivity {
                     buttonStartPlaying.setEnabled(false);
                     startRecording();
                     Toast.makeText(RecordActivity.this, "Recording started",
-                            Toast.LENGTH_LONG).show();
+                            Toast.LENGTH_SHORT).show();
                 } else {
                     requestPermission();
                 }
@@ -108,7 +122,7 @@ public class RecordActivity extends AppCompatActivity {
                 stopRecord();
 
                 Toast.makeText(RecordActivity.this, "Recording Completed",
-                        Toast.LENGTH_LONG).show();
+                        Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -122,7 +136,7 @@ public class RecordActivity extends AppCompatActivity {
                     Log.e(TAG, "play() failed");
                 }
                 Toast.makeText(RecordActivity.this, "Recording Playing",
-                        Toast.LENGTH_LONG).show();
+                        Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -185,9 +199,9 @@ public class RecordActivity extends AppCompatActivity {
 
                     if (StoragePermission && RecordPermission) {
                         Toast.makeText(RecordActivity.this, "Permission Granted",
-                                Toast.LENGTH_LONG).show();
+                                Toast.LENGTH_SHORT).show();
                     } else {
-                        Toast.makeText(RecordActivity.this,"Permission Denied",Toast.LENGTH_LONG).show();
+                        Toast.makeText(RecordActivity.this,"Permission Denied",Toast.LENGTH_SHORT).show();
                     }
                 }
                 break;
@@ -262,6 +276,13 @@ public class RecordActivity extends AppCompatActivity {
                         buttonStopPlaying.setEnabled(false);
                         buttonStartPlaying.setEnabled(true);
                         buttonStartRecord.setEnabled(true);
+
+                        if(autoRecord){
+                            buttonStartRecord.setEnabled(false);
+                            buttonStopRecord.setEnabled(true);
+                            buttonStartPlaying.setEnabled(false);
+                            startRecording();
+                        }
                     }
                     @Override
                     public void onPeriodicNotification(AudioTrack audioTrack) {
@@ -381,6 +402,8 @@ public class RecordActivity extends AppCompatActivity {
                             stopRecord();
                             try {
                                 playShortAudioFileViaAudioTrack(ROOTPATH +"/"+ AUDIO_REVERSED_FILE_NAME);
+                                Toast.makeText(RecordActivity.this, "Recording playing",
+                                        Toast.LENGTH_SHORT).show();
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
