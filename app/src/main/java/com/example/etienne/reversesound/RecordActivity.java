@@ -14,6 +14,7 @@ import android.view.View;
 
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.Toast;
 
@@ -65,11 +66,12 @@ public class RecordActivity extends AppCompatActivity {
     private long silenceStart;
     private boolean silenceStarted = false;
     private boolean autoRecord = false;
+    private int delay = 1 ;
 
     Button buttonStartRecord, buttonStopRecord, buttonStartPlaying,
             buttonStopPlaying;
     Switch switch_button;
-    Random random ;
+    SeekBar delayControl;
     public static final int RequestPermissionCode = 1;
 
     @Override
@@ -82,12 +84,28 @@ public class RecordActivity extends AppCompatActivity {
         buttonStartPlaying = (Button) findViewById(R.id.button3);
         buttonStopPlaying = (Button)findViewById(R.id.button4);
         switch_button = (Switch) findViewById(R.id.switch_button);
+        delayControl = (SeekBar) findViewById(R.id.seekbar);
+
 
         buttonStopRecord.setEnabled(false);
         buttonStartPlaying.setEnabled(false);
         buttonStopPlaying.setEnabled(false);
 
-        random = new Random();
+        delayControl.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser){
+                delay = progress + 1;
+            }
+
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                // TODO Auto-generated method stub
+            }
+
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                Toast.makeText(RecordActivity.this,"Delay before replay : " + delay + "secondes",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+
 
         switch_button.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
 
@@ -397,7 +415,7 @@ public class RecordActivity extends AppCompatActivity {
                         }
                         long timeElapsed = System.currentTimeMillis() - silenceStart;
                         System.out.println((timeElapsed)/1000);
-                        if( timeElapsed > MIN_SILENCE_TIME * 1000){
+                        if( timeElapsed > delay * 1000){
                             silenceStarted = false ;
                             stopRecord();
                             try {

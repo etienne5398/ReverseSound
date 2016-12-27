@@ -9,8 +9,8 @@
     android:paddingTop="@dimen/activity_vertical_margin">
 
     <ImageView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
         android:id="@+id/imageView"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
@@ -71,6 +71,29 @@
         android:layout_below="@+id/toggle_label"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="10dp"
+        />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/seekbar_label"
+        android:layout_below="@+id/switch_button"
+        android:text="Delay before mirror effect"
+        android:layout_marginTop="10dp"
+        android:layout_centerHorizontal="true"/>
+
+    <SeekBar
+
+        android:layout_below="@+id/seekbar_label"
+        android:id="@+id/seekbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_marginEnd="10dp"
+        android:max="4"
         />
 
 </RelativeLayout>
