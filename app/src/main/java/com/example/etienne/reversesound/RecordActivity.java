@@ -16,6 +16,7 @@ import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.SeekBar;
 import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedInputStream;
@@ -31,7 +32,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Random;
 
 import static android.Manifest.permission.RECORD_AUDIO;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
@@ -54,8 +54,7 @@ public class RecordActivity extends AppCompatActivity {
     public static final String AUDIO_RECORDING_FILE_NAME = "recording.raw";
     public static final String AUDIO_REVERSED_FILE_NAME = "reversedFile.raw";
     private static final String ROOTPATH = Environment.getExternalStorageDirectory().getAbsolutePath();
-    private static final int MIN_SILENCE_TIME = 3; //second
-    private static final short THRESHOLD = 10000; //1500
+    private int threshold = 1500; //1500
 
     private DataInputStream dis;
     private AudioRecord recorder;
@@ -72,8 +71,10 @@ public class RecordActivity extends AppCompatActivity {
     Button buttonStartRecord, buttonStopRecord, buttonStartPlaying,
     buttonStopPlaying;
     Switch switch_button;
-    SeekBar delayControl;
+    SeekBar delayControl, thresholdControl;
     public static final int RequestPermissionCode = 1;
+    private TextView delayLabel;
+    private TextView thresholdLabel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,7 +87,9 @@ public class RecordActivity extends AppCompatActivity {
         buttonStopPlaying = (Button)findViewById(R.id.button4);
         switch_button = (Switch) findViewById(R.id.switch_button);
         delayControl = (SeekBar) findViewById(R.id.seekbar);
-
+        delayLabel = (TextView) findViewById(R.id.delay_text);
+        thresholdControl = (SeekBar) findViewById(R.id.seekbar_threshold);
+        thresholdLabel = (TextView) findViewById(R.id.threshold_text);
 
         buttonStopRecord.setEnabled(false);
         buttonStartPlaying.setEnabled(false);
@@ -95,6 +98,7 @@ public class RecordActivity extends AppCompatActivity {
         delayControl.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser){
                 delay = progress + 1;
+                delayLabel.setText(String.valueOf(delay) + (delay>1?" seconds": " second"));
             }
 
             public void onStartTrackingTouch(SeekBar seekBar) {
@@ -102,8 +106,22 @@ public class RecordActivity extends AppCompatActivity {
             }
 
             public void onStopTrackingTouch(SeekBar seekBar) {
-                Toast.makeText(RecordActivity.this,"Delay before replay : " + delay + "secondes",
-                        Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        thresholdControl.setProgress(1500);
+        thresholdControl.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser){
+                threshold = progress + 50;
+                thresholdLabel.setText(String.valueOf(threshold));
+            }
+
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                // TODO Auto-generated method stub
+            }
+
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
             }
         });
 
@@ -137,11 +155,7 @@ public class RecordActivity extends AppCompatActivity {
         buttonStopRecord.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
                 stopRecord();
-
-                Toast.makeText(RecordActivity.this, "Recording Completed",
-                        Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -183,18 +197,20 @@ public class RecordActivity extends AppCompatActivity {
                 buttonStopPlaying.setEnabled(false);
             }
         });
+        boolean soundReverted= false;
         if(recorder != null) {
             recording = false;
             recorder.stop();
             recorder.release();
             thread = null;
             Log.v(TAG, "Recording done…");
-            reverse();
+            soundReverted = reverse();
         }
+        final boolean finalSoundReverted = soundReverted;
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                buttonStartPlaying.setEnabled(true);
+                buttonStartPlaying.setEnabled(finalSoundReverted);
                 buttonStartRecord.setEnabled(true);
             }
         });
@@ -314,49 +330,58 @@ public class RecordActivity extends AppCompatActivity {
 
     }
 
-    public void reverse(){
+    public boolean reverse(){
         File inputFile = new File(ROOTPATH+"/"+AUDIO_RECORDING_FILE_NAME);
-        try {
-            InputStream is = new FileInputStream(ROOTPATH+"/"+AUDIO_RECORDING_FILE_NAME);
-            BufferedInputStream bis = new BufferedInputStream(is);
-            dis = new DataInputStream(bis);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        int fileLength = (int)inputFile.length();
-        byte[] buffer = new byte[fileLength];
-
-        byte[] byteArray = new byte[fileLength + 1];
-        Log.v("bytearray size = ", ""+byteArray.length);
-
-        try {
-            while(dis.read(buffer) != -1 ) {
-                dis.read(buffer);
-                Log.v("about to read buffer", "buffer");
-                byteArray = buffer;
-            }
-            Log.v(" buffer size = ", ""+ buffer.length);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        byte[] tempArray = reverse16bit(byteArray);
         File revFile = new File(ROOTPATH, AUDIO_REVERSED_FILE_NAME);
-        System.out.println("create Reverse :"+revFile.getAbsolutePath());
-        Log.v("revfile path ", ""+revFile.getAbsolutePath());
-        if(revFile.exists()){
+        if (revFile.exists()) {
             revFile.delete();
         }
-        try {
-            OutputStream os = new FileOutputStream(revFile);
-            BufferedOutputStream bos = new BufferedOutputStream(os);
-            DataOutputStream dos = new DataOutputStream(bos);
-            Log.v("temparray size = ", ""+ tempArray.length);
-            dos.write(tempArray);
-            dos.flush();
-            dos.close();
-        } catch (Exception e) {
-            e.printStackTrace();
+        if(inputFile.length() > 0) {
+            try {
+                InputStream is = new FileInputStream(ROOTPATH + "/" + AUDIO_RECORDING_FILE_NAME);
+                BufferedInputStream bis = new BufferedInputStream(is);
+                dis = new DataInputStream(bis);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            int fileLength = (int) inputFile.length();
+            byte[] buffer = new byte[fileLength];
+
+            byte[] byteArray = new byte[fileLength + 1];
+            Log.v("bytearray size = ", "" + byteArray.length);
+
+            try {
+                while (dis.read(buffer) != -1) {
+                    dis.read(buffer);
+                    Log.v("about to read buffer", "buffer");
+                    byteArray = buffer;
+                }
+                Log.v(" buffer size = ", "" + buffer.length);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            byte[] tempArray = reverse16bit(byteArray);
+
+            System.out.println("create Reverse :" + revFile.getAbsolutePath());
+            Log.v("revfile path ", "" + revFile.getAbsolutePath());
+            if (revFile.exists()) {
+                revFile.delete();
+            }
+            try {
+                OutputStream os = new FileOutputStream(revFile);
+                BufferedOutputStream bos = new BufferedOutputStream(os);
+                DataOutputStream dos = new DataOutputStream(bos);
+                Log.v("temparray size = ", "" + tempArray.length);
+                dos.write(tempArray);
+                dos.flush();
+                dos.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return true;
+        }else{
+            Toast.makeText(RecordActivity.this,"Aucun son capturé", Toast.LENGTH_SHORT).show();
+            return false;
         }
     }
 
@@ -410,7 +435,7 @@ public class RecordActivity extends AppCompatActivity {
                         return;
                     }
 
-                    if(searchThreshold(byteToShort(audioData), THRESHOLD) == -1 ){
+                    if(searchThreshold(byteToShort(audioData), threshold) == -1 ){
                         if(!silenceStarted) {
                             silenceStarted = true;
                             silenceStart = System.currentTimeMillis();
@@ -491,17 +516,17 @@ public class RecordActivity extends AppCompatActivity {
         return buffer;
     }
 
-    int searchThreshold(short[]arr,short thr){
+    int searchThreshold(short[]arr, int thr){
         int arrLen=arr.length;
         System.out.print("\n");
         for (int peakIndex=0; peakIndex<arrLen; peakIndex++){
             System.out.print(arr[peakIndex]+" ");
-            if ((arr[peakIndex]>=thr) || (arr[peakIndex]<=-thr)){
+            if ((arr[peakIndex] >= thr) || (arr[peakIndex] <= -thr)){
 
                 return 1; //bruit
             }
         }
-        System.out.println("\n\nSILENCE\n");
+        System.out.println("\nSEUIL: "+thr+ "\n\nSILENCE\n");
         return -1; //silence
     }
 
