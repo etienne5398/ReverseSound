@@ -45,7 +45,7 @@ import android.support.v4.content.ContextCompat;
 
 public class RecordActivity extends AppCompatActivity {
 
-    private static final String TAG = MainActivity.class.getCanonicalName() ;
+    private static final String TAG = RecordActivity.class.getCanonicalName() ;
     public static final int SAMPLING_RATE = 44100; //44100
     public static final int AUDIO_SOURCE = MediaRecorder.AudioSource.MIC;
     public static final int CHANNEL_IN_CONFIG = AudioFormat.CHANNEL_IN_DEFAULT;
