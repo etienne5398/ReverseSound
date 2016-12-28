@@ -408,7 +408,6 @@ public class RecordActivity extends AppCompatActivity {
             public void run() {
                 android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO);
                 byte[] audioData = new byte[BUFFER_SIZE];
-                //short[] audioData = new short[BUFFER_SIZE];
                 recorder = new AudioRecord(
                         AUDIO_SOURCE,
                         SAMPLING_RATE,
