@@ -1,4 +1,4 @@
-package com.example.etienne.reversesound;
+package com.example.etienne.reversesong;
 
 import org.junit.Test;
 

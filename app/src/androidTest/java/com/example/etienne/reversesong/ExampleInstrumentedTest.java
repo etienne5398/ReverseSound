@@ -1,4 +1,4 @@
-package com.example.etienne.reversesound;
+package com.example.etienne.reversesong;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

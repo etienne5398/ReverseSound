@@ -1,4 +1,4 @@
-package com.example.etienne.reversesound;
+package com.reversesong;
 
 import android.media.AudioFormat;
 import android.media.AudioManager;
@@ -39,6 +39,9 @@ import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import android.support.v4.app.ActivityCompat;
 import android.content.pm.PackageManager;
 import android.support.v4.content.ContextCompat;
+
+import com.reversesong.R;
+
 /**
  * Created by Etienne on 26/12/2016.
  */
